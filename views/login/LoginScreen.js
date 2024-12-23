@@ -14,12 +14,12 @@ export default function LoginScreen({ navigation }) {
             <View className="">
                 <View className="m-5 gap-5">
                     <Text>Correo</Text>
-                    <TextInput className="w-[369px] h-[50px] items-start justify-center border rounded-md p-5" placeholder='user@gmail.com'></TextInput>
+                    <TextInput className="w-[369px] h-[50px] items-start justify-center border border-[#003f69]  rounded-md p-5" placeholder='user@gmail.com'></TextInput>
                 </View>
 
                 <View className="m-5 gap-5">
                     <Text>Contraseña</Text>
-                    <View className="w-[369px] h-[50px] border rounded-md  flex flex-row items-center  justify-between">
+                    <View className="w-[369px] h-[50px] border border-[#003f69]  rounded-md  flex flex-row items-center  justify-between">
                         <TextInput className="p-5 w-[300px]" placeholder='Contraseña' secureTextEntry={true}></TextInput>
                         <AntDesign className="mr-5" name="eye" size={22} color="#003f69" />
                     </View>
