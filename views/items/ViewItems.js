@@ -7,6 +7,7 @@ import React, { useRef, useState } from 'react';
 import { FlatList, GestureHandlerRootView } from "react-native-gesture-handler";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
+
 const data = [
     { label: 'Nombre a-z', value: '1' },
     { label: 'Nombre z-a', value: '2' },
@@ -17,7 +18,7 @@ const data = [
 
 const screenWidth = Dimensions.get('window').width;
 
-export default function ViewItems() {
+export default function ViewItems({ navigation }) {
     const [value, setValue] = useState(null);
     const [items, setItems] = useState([
         { id: 1, name: 'No.Example', category: 'Category Example', price: '$24.99' },
@@ -30,20 +31,41 @@ export default function ViewItems() {
         swipeableRefs.current.forEach(ref => ref?.close());
     };
 
+
+
     const deleteItem = (id) => {
         setItems(prevItems => prevItems.filter(item => item.id !== id));
         swipeableRefs.current.get(id)?.close();
     };
 
-    const renderRightActions = (id) => (
-        <View className="justify-center items-center">
-            <TouchableOpacity
-                onPress={() => deleteItem(id)}
-                className="bg-red-500 justify-center items-center w-20 h-[95px] rounded-lg "
-            >
-                <Text className="text-white font-bold">Eliminar</Text>
-            </TouchableOpacity>
+    const navigateToEdit = (item) => {
+        navigation.navigate('Editar Productos', { item, deleteItem });
+    };
+
+
+
+    const renderRightActions = (item) => (
+        <View className="flex flex-row-reverse ">
+            <View className="justify-center items-center">
+                <TouchableOpacity
+                    onPress={() => deleteItem(item.id)}
+                    className="bg-red-500 justify-center items-center w-20 h-[95px] rounded-lg "
+                >
+                    <Text className="text-white font-bold">Eliminar</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View className="justify-center items-center">
+                <TouchableOpacity
+                    onPress={() => navigateToEdit(item)}
+                    className="bg-[#003F69] justify-center items-center w-20 h-[95px] rounded-lg "
+                >
+                    <Text className="text-white font-bold">Editar</Text>
+                </TouchableOpacity>
+            </View>
         </View>
+
+
 
     );
 
@@ -52,7 +74,7 @@ export default function ViewItems() {
             ref={(ref) => {
                 if (ref) swipeableRefs.current.set(item.id, ref);
             }}
-            renderRightActions={() => renderRightActions(item.id)}
+            renderRightActions={() => renderRightActions(item)}
             onSwipeableWillOpen={() => closeAllSwipes()}
             onSwipeableClose={() => swipeableRefs.current.delete(item.id)}
             overshootRight={false}
@@ -67,6 +89,7 @@ export default function ViewItems() {
                     </View>
                     <Text className="text-base font-semibold text-red-500 mt-1">{item.price}</Text>
                 </View>
+
 
             </View>
         </Swipeable>
@@ -97,9 +120,12 @@ export default function ViewItems() {
                         />
                     </View>
                     <View>
-                        <View className="bg-[#003F69] w-40 rounded-lg h-[50px] items-center justify-center">
-                            <Text className="text-white text-center">Agregar +</Text>
-                        </View>
+                        <TouchableOpacity onPress={() => navigation.navigate('Añadir Productos')}>
+                            <View className="bg-[#003F69] w-40 rounded-lg h-[50px] items-center justify-center">
+                                <Text className="text-white text-center">Agregar +</Text>
+                            </View>
+                        </TouchableOpacity>
+
 
                     </View>
 

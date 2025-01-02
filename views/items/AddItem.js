@@ -4,7 +4,7 @@ import { ScrollView } from 'react-native-gesture-handler'
 import TextInputs from '../../components/TextInputs'
 import '../../global.css'
 
-export default function AddItem() {
+export default function AddItem({ navigation }) {
   return (
     <ScrollView>
       <View className="flex-1 ">
