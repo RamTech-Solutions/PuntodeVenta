@@ -1,7 +1,6 @@
 import "../../global.css";
 import { Dropdown } from 'react-native-element-dropdown';
 import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
-import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useRef, useState } from 'react';
 import { FlatList, GestureHandlerRootView } from "react-native-gesture-handler";
@@ -87,7 +86,7 @@ export default function ViewItems({ navigation }) {
                         <Text className="text-lg font-bold text-blue-900">{item.name}</Text>
                         <Text className="text-sm text-gray-500">{item.category}</Text>
                     </View>
-                    <Text className="text-base font-semibold text-red-500 mt-1">{item.price}</Text>
+                    <Text className="text-base font-semibold text-[#2A3256] mt-1">{item.price}</Text>
                 </View>
 
 

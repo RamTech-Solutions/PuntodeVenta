@@ -6,7 +6,11 @@ module.exports = {
     "./navigation/**/*.{js,jsx,ts,tsx}",
     "./views/main/**/*.{js,jsx,ts,tsx}",
     "./views/items/**/*.{js,jsx,ts,tsx}",
-    "./views/report/**/*.{js,jsx,ts,tsx}"],
+    "./views/report/**/*.{js,jsx,ts,tsx}",
+    "./views/workers/**/*.{js,jsx,ts,tsx}",
+    "./views/configuration/**/*.{js,jsx,ts,tsx}",
+    "./views/configuration/acciones/**/*.{js,jsx,ts,tsx}",
+    "./views/configuration/soporte/**/*.{js,jsx,ts,tsx}"],
 
   presets: [require("nativewind/preset")],
   theme: {
