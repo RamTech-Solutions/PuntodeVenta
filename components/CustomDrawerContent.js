@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import '../global.css'
 
+
 export default function CustomDrawerContent(props) {
     return (
-        <View className="flex-1">
+        
+            <View className="flex-1">
             {/* Contenido desplazable */}
             <DrawerContentScrollView {...props} className="flex-1">
                 <DrawerItemList {...props} />
@@ -17,5 +19,6 @@ export default function CustomDrawerContent(props) {
             </TouchableOpacity>
         </View>
 
+       
     );
 }

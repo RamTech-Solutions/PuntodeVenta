@@ -56,7 +56,7 @@ export default function MainConfiguration(navigation) {
             </View>
 
             {/* Footer Ayuda y soporte*/}
-            <View>
+            <View className="mb-5">
                 <View className="ml-5">
                     <Text className="text-[#003F69] font-bold text-2xl">
                         Ayuda y soporte
@@ -65,12 +65,14 @@ export default function MainConfiguration(navigation) {
 
                 <View className="m-5 gap-7 ">
                     <OptionComponent
-                        option="Acerca de" />
+                        option="Acerca de nosotros"
+                        link="Acerca de nosotros" />
                     <OptionComponent
                         option="Ayuda & FAQs"
-                        link="Añadir Productos" />
+                        link="Ayuda & FAQs" />
                     <OptionComponent
-                        option="Contactanos" />
+                        option="Contactanos"
+                        link="Contactanos" />
                 </View>
             </View>
 

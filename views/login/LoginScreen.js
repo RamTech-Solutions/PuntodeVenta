@@ -23,21 +23,21 @@ export default function LoginScreen({ navigation }) {
                         <TextInput className="p-5 w-[300px]" placeholder='Contraseña' secureTextEntry={true}></TextInput>
                         <AntDesign className="mr-5" name="eye" size={22} color="#003f69" />
                     </View>
-                    <TouchableOpacity>
-                        <Text className="text-[#B3ACA4]">¿Olvidaste tu contraseña?</Text>
+                    <TouchableOpacity onPress={()=>navigation.navigate('Change password')}>
+                        <Text className="text-gray-500">¿Olvidaste tu contraseña?</Text>
                     </TouchableOpacity>
                 </View>
 
 
                 <View className="justify-center items-center">
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress ={()=> navigation.navigate('Dashboard')}>
                         <View className="justify-center items-center bg-[#003F69] w-[359px] h-[50px] rounded-lg">
                             <Text className="font-bold text-white">Iniciar Sesión</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
                 <TouchableOpacity onPress={()=> navigation.navigate('Register')}>
-                    <Text className="text-[#B3ACA4] m-5">¿No tienes cuenta? Registrate</Text>
+                    <Text className="text-gray-500 m-5">¿No tienes cuenta? Registrate</Text>
                 </TouchableOpacity>
 
             </View>

@@ -1,10 +1,33 @@
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { ScrollView } from 'react-native-gesture-handler'
 import TextInputs from '../../components/TextInputs'
 import '../../global.css'
 
-export default function AddItem({ navigation }) {
+export default function AddItem({ navigation, route }) {
+
+  const [productName, setProductName] = useState('');
+  const [barcode, setBarcode] = useState('');
+  const [categories, setCategory] = useState('');
+  const [url, setUrl] = useState('')
+
+  // código de barras
+  useEffect(() => {
+    if (route.params) {
+      const { barcode, productName, categories, url } = route.params;
+      setBarcode(barcode);
+      setProductName(productName);
+      setCategory(categories);
+      setUrl(url)
+
+      console.log(productName)
+      console.log(barcode)
+      console.log(categories)
+      console.log(url)
+    }
+  }, [route.params]);
+
+
   return (
     <ScrollView>
       <View className="flex-1 ">
@@ -16,11 +39,13 @@ export default function AddItem({ navigation }) {
         <View className="m-5 ">
           <View className="gap-5">
             <TextInputs
-              titulo="Nombre del producto"
-              placeHolder="Ejemplo de nombre" />
+              titulo={"Nombre del producto"}
+              placeHolder={productName} />
+
             <TextInputs
               titulo="Precio de venta"
-              placeHolder="$99.99" />
+              placeHolder="$99.99"
+            />
 
             <View className="bg-white rounded-md p-5 gap-5">
               <TextInputs
@@ -36,8 +61,12 @@ export default function AddItem({ navigation }) {
               <Text className="text-[#003F69] text-[22px] font-bold ">Añadir foto (opcional)</Text>
               <View className="flex flex-row items-center justify-between border border-[#157A8C] bg-white p-5 rounded-md">
                 <Image
-                  source={{ uri: "https://placehold.jp/80x80.png" }}
-                  className="w-[80px] h-[80px]"
+                  source={{
+                    uri: url && url.trim() !== ""
+                      ? url
+                      : "https://placehold.jp/80x80.png"
+                  }}
+                  className="w-[80px] h-[80px] rounded"
                 />
                 <TouchableOpacity>
                   <View className="bg-[#003F69] p-5 rounded-md w-40 justify-center items-center">
@@ -50,17 +79,26 @@ export default function AddItem({ navigation }) {
             <View className="gap-5">
               <TextInputs
                 titulo="Categoría"
-                placeHolder="$99.99" />
+                placeHolder={categories} />
               <TextInputs
                 titulo="ID"
-                placeHolder="P342" />
+                placeHolder={barcode} />
               <TextInputs
                 titulo="Código de barras"
-                placeHolder="P342" />
+                placeHolder={barcode} />
             </View>
 
             {/* Botón de aceptar/cancelar */}
             <View className="justify-center items-center gap-5">
+
+              <View className="w-full">
+                <TouchableOpacity onPress={() => navigation.navigate("Escanear Productos", { mode: 'addItem' })}>
+                  <View className="bg-[#003F69] p-5 rounded-lg w-full items-center">
+                    <Text className="text-white font-bold">Escanear código de barras (Auto-completar)</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
               <View className="w-full">
                 <TouchableOpacity>
                   <View className="bg-[#003F69] p-5 rounded-lg w-full items-center">
@@ -70,7 +108,7 @@ export default function AddItem({ navigation }) {
               </View>
 
 
-              <View className="w-full"> 
+              <View className="w-full">
                 <TouchableOpacity>
                   <View className="border border-red-600 p-5 rounded-lg items-center bg-white">
                     <Text className="text-red-600 font-bold">Cancelar</Text>

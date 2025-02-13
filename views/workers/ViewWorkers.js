@@ -36,7 +36,7 @@ export default function ViewWorkers({ navigation }) {
   };
 
   const navigateToEdit = (item) => {
-      navigation.navigate('Editar Productos', { item, deleteItem });
+      navigation.navigate('Editar Trabajador', { item, deleteItem });
   };
 
 
@@ -101,7 +101,7 @@ export default function ViewWorkers({ navigation }) {
                           maxHeight={300}
                           labelField="label"
                           valueField="value"
-                          placeholder="Filtrar productos"
+                          placeholder="Filtrar trabajadores"
                           value={value}
                           onChange={item => {
                               setValue(item.value);
@@ -112,7 +112,7 @@ export default function ViewWorkers({ navigation }) {
                       />
                   </View>
                   <View>
-                      <TouchableOpacity onPress={() => navigation.navigate('Añadir Productos')}>
+                      <TouchableOpacity onPress={() => navigation.navigate('Añadir Trabajador')}>
                           <View className="bg-[#003F69] w-40 rounded-lg h-[50px] items-center justify-center">
                               <Text className="text-white text-center">Agregar +</Text>
                           </View>
