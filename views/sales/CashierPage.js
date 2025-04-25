@@ -1,12 +1,21 @@
-import { View, Text, TouchableOpacity, Image } from 'react-native'
+import { View, Text, TouchableOpacity, Image, Alert } from 'react-native'
 import React, { useState } from 'react'
 import AntDesign from '@expo/vector-icons/AntDesign';
 import '../../global.css'
+import { useRoute } from '@react-navigation/native';
+import { auth } from '../../firebase-config.js';
+import { getFirestore, collection, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useProductContext } from '../../context/ProductContext';
 
 export default function CashierPage({ navigation }) {
-
+  const route = useRoute();
+  const { cartItems, total } = route.params || {}; // Obtiene los productos y el total
+  const db = getFirestore();
+  const { clearCart } = useProductContext();
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentMethod, setPaymentMethod] = useState('Efectivo');
+  const [change, setChange] = useState(null);
+
 
   const handlePress = (value) => {
     setAmount((prev) => prev + value);
@@ -16,8 +25,33 @@ export default function CashierPage({ navigation }) {
     setAmount((prev) => prev.slice(0, -1));
   };
 
-  const handleConfirm = () => {
-    alert(`Confirmando el pago de $${amount}`);
+  const handleConfirmPurchase = async () => {
+    if (paymentMethod === 'Efectivo') {
+      const paidAmount = parseFloat(amount);
+      if (isNaN(paidAmount) || paidAmount < total) {
+        Alert.alert('Pago insuficiente', 'El monto entregado es menor que el total.');
+        return;
+      }
+      setChange(paidAmount - total);
+    }
+
+    try {
+      const userId = auth.currentUser.uid;
+      await addDoc(collection(db, `usuarios/${userId}/ventas`), {
+        productos: cartItems,
+        total,
+        paymentMethod,
+        amountPaid: paymentMethod === 'Efectivo' ? parseFloat(amount) : total,
+        change: paymentMethod === 'Efectivo' ? parseFloat(amount) - total : 0,
+        timestamp: serverTimestamp(),
+      });
+
+      Alert.alert('Compra guardada con éxito');
+      navigation.navigate('Payment Successful', { paymentMethod, change: parseFloat(amount) - total });
+      clearCart();
+    } catch (error) {
+      console.error('Error al guardar la venta:', error);
+    }
   };
 
   return (
@@ -32,26 +66,26 @@ export default function CashierPage({ navigation }) {
       <View className="border-t border-b border-[#d1d1d1]">
         <View className="flex flex-row justify-between items-center my-5">
           <Text className="text-lg font-semibold text-[#003F69]">Factura Total</Text>
-          <Text className="text-lg font-bold text-[#003F69]">$89.99</Text>
+          <Text className="text-lg font-bold text-[#003F69]">Total: ${total.toFixed(2)}</Text>
         </View>
       </View>
 
       <View>
         <View className="flex-row justify-around border-gray-300">
-          <TouchableOpacity onPress={() => setPaymentMethod('cash')} className="pb-2 items-center w-40">
-            <Text className={`text-xl text-center ${paymentMethod === 'cash' ? 'text-black' : 'text-gray-400'}`}>Efectivo</Text>
-            <View className={`h-1 mt-1 w-40 ${paymentMethod === 'cash' ? 'bg-[#2A3256]' : 'opacity-0'}`} />
+          <TouchableOpacity onPress={() => setPaymentMethod('Efectivo')} className="pb-2 items-center w-40">
+            <Text className={`text-xl text-center ${paymentMethod === 'Efectivo' ? 'text-black' : 'text-gray-400'}`}>Efectivo</Text>
+            <View className={`h-1 mt-1 w-40 ${paymentMethod === 'Efectivo' ? 'bg-[#2A3256]' : 'opacity-0'}`} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setPaymentMethod('card')} className="pb-2 items-center w-40">
-            <Text className={`text-xl text-center ${paymentMethod === 'card' ? 'text-black' : 'text-gray-400'}`}>Tarjeta</Text>
-            <View className={`h-1 mt-1 w-40 ${paymentMethod === 'card' ? 'bg-[#2A3256]' : 'opacity-0'}`} />
+          <TouchableOpacity onPress={() => setPaymentMethod('Tarjeta')} className="pb-2 items-center w-40">
+            <Text className={`text-xl text-center ${paymentMethod === 'Tarjeta' ? 'text-black' : 'text-gray-400'}`}>Tarjeta</Text>
+            <View className={`h-1 mt-1 w-40 ${paymentMethod === 'Tarjeta' ? 'bg-[#2A3256]' : 'opacity-0'}`} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Input price */}
       <View className="p-5 rounded-2xl w-full ">
-        {paymentMethod === 'cash' && (
+        {paymentMethod === 'Efectivo' && (
           <>
             <View className="items-center">
               <View className="border border-[#157A8C] rounded-lg  w-full p-10 mb-5">
@@ -84,7 +118,7 @@ export default function CashierPage({ navigation }) {
 
           </>
         )}
-        {paymentMethod === 'card' && (
+        {paymentMethod === 'Tarjeta' && (
           <View>
             <Text className="text-xl mb-5 font-bold">E-Wallet</Text>
             <View className="flex flex-row gap-4 items-center justify-center">
@@ -132,7 +166,7 @@ export default function CashierPage({ navigation }) {
           </View>
         )}
 
-        <TouchableOpacity onPress={()=> navigation.navigate ('Payment Successful')} className="bg-[#2A3256] mt-10 p-4 rounded-xl">
+        <TouchableOpacity onPress={handleConfirmPurchase} className="bg-[#2A3256] mt-10 p-4 rounded-xl">
           <Text className="text-white text-center text-xl font-bold">Confirmar Pago</Text>
         </TouchableOpacity>
       </View>

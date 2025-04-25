@@ -1,19 +1,85 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
-import React from 'react'
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { ScrollView } from 'react-native-gesture-handler'
 import TextInputs from '../../components/TextInputs'
 import AntDesign from '@expo/vector-icons/AntDesign';
 import '../../global.css'
+import { getFirestore, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { app } from '../../firebase-config.js';
+import { getAuth } from 'firebase/auth';
 
 export default function EditWorkers({ navigation, route }) {
 
-  const { item, deleteItem } = route.params;
-  const itemID = item.id;
-  const itemStringID = itemID.toString();
+  const db = getFirestore(app);
+  const auth = getAuth(app);
 
-  const handleDelete = () => {
-    deleteItem(item.id); // Elimina el producto
-    navigation.navigate('Ver Trabajadores'); // Regresa a la vista de productos
+  const { item } = route.params;
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [address, setAddress] = useState("");
+  const [role, setRole] = useState("");
+
+
+  useEffect(() => {
+    if (item) {
+      setName(item.name || '');
+      setEmail(item.email || '');
+      setPhoneNumber(item.phoneNumber || '');
+      setAddress(item.address || '');
+      setRole(item.role || '');
+    }
+  }, [item]);
+
+  const handleDelete = async () => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        console.error("Usuario no autenticado");
+        return;
+      }
+
+      await deleteDoc(doc(db, `usuarios/${userId}/trabajadores`, item.id));
+
+      // Muestra una alerta para confirmar la eliminación
+      Alert.alert("Eliminado", "El producto ha sido eliminado correctamente.", [
+        { text: "OK", onPress: () => navigation.navigate('Ver Trabajadores') }
+      ]);
+
+    } catch (error) {
+      console.error("Error eliminando producto: ", error);
+      Alert.alert("Error", "Hubo un problema al eliminar el producto.");
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        console.error("Usuario no autenticado");
+        return;
+      }
+
+      // Referencia al documento en Firestore
+      const workRef = doc(db, `usuarios/${userId}/trabajadores`, item.id);
+
+      // Actualizar Firestore con los nuevos valores
+      await updateDoc(workRef, {
+        name,
+        email,
+        phoneNumber,
+        address,
+        role
+      });
+
+      Alert.alert("Actualizado", "El producto ha sido actualizado correctamente.", [
+        { text: "OK", onPress: () => navigation.navigate('Ver Trabajadores') }
+      ]);
+    } catch (error) {
+      console.error("Error actualizando producto: ", error);
+      Alert.alert("Error", "Hubo un problema al actualizar el producto.");
+    }
   };
 
   return (
@@ -34,29 +100,39 @@ export default function EditWorkers({ navigation, route }) {
         <View className="m-5 ">
           <View className="gap-5">
             <TextInputs
-              titulo="Nombre del producto"
-              placeHolder={item.name} />
+              titulo="Nombre del trabajador"
+              placeHolder={item.name}
+              value={name}
+              onChangeText={setName} />
             <TextInputs
               titulo="Número de telefono"
-              placeHolder="xxx-xxx-xxxx" />
+              placeHolder={item.phoneNumber}
+              value={phoneNumber}
+              onChangeText={setPhoneNumber} />
 
             <TextInputs
               titulo="Email"
-              placeHolder={"email@example.com"}
+              placeHolder={item.email}
+              value={email}
+              onChangeText={setEmail}
             />
             <TextInputs
               titulo="Rol"
-              placeHolder={item.category} />
+              placeHolder={item.role}
+              value={role}
+              onChangeText={setRole} />
             <TextInputs
-            titulo="Dirección"
-            placeHolder="Galileo 305, Fátima, 34060 Durango, Dgo."/>
+              titulo="Dirección"
+              placeHolder={item.address}
+              value={address}
+              onChangeText={setAddress} />
 
             {/* Botón de aceptar/cancelar */}
             <View className="justify-center items-center gap-5">
               <View className="w-full">
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleUpdate}>
                   <View className="bg-[#003F69] p-5 rounded-lg w-full items-center">
-                    <Text className="text-white font-bold">Añadir nuevo producto</Text>
+                    <Text className="text-white font-bold">Editar trabajador</Text>
                   </View>
                 </TouchableOpacity>
               </View>

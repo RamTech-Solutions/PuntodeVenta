@@ -2,6 +2,7 @@ import { View, Text } from 'react-native'
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Provider } from 'react-native-paper';
 import React from 'react'
+
 //Vistas
 import DashboardMain from '../views/main/DashboardMain';
 import CustomDrawerContent from '../components/CustomDrawerContent';
@@ -9,6 +10,7 @@ import SalesReport from '../views/report/SalesReport';
 import MainConfiguration from '../views/configuration/MainConfiguration';
 import ScanProduct from '../views/sales/ScanProduct';
 import ScannerPage from '../views/scanner/ScannerPage';
+import SalesHistory from '../views/report/SalesHistory';
 
 //Items
 import EditItem from '../views/items/EditItem';
@@ -51,6 +53,7 @@ const Drawer = createDrawerNavigator();
 
 export default function DrawerNavigator() {
     return (
+
         <Provider>
             <Drawer.Navigator
                 drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -80,6 +83,19 @@ export default function DrawerNavigator() {
                     options={{
                         drawerIcon: ({ color, size }) => (
                             <Entypo name="bar-graph" size={size} color={color} />
+                        ),
+                        headerTitleAlign: 'left',
+                        headerTintColor: '#003F69',
+
+                    }}
+                />
+
+                <Drawer.Screen
+                    name="Historial de ventas"
+                    component={SalesHistory}
+                    options={{
+                        drawerIcon: ({ color, size }) => (
+                            <FontAwesome name="history" size={size} color={color} />
                         ),
                         headerTitleAlign: 'left',
                         headerTintColor: '#003F69',
@@ -282,5 +298,6 @@ export default function DrawerNavigator() {
             </Drawer.Navigator>
 
         </Provider>
+
     )
 }

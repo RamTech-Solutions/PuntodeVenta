@@ -2,33 +2,80 @@ import "../../global.css";
 import { Dropdown } from 'react-native-element-dropdown';
 import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { FlatList, GestureHandlerRootView } from "react-native-gesture-handler";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
+//Firestore
+import { getFirestore, collection, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { app } from '../../firebase-config.js';
+import { getAuth } from 'firebase/auth';
+
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+
 const data = [
-  { label: 'Nombre a-z', value: '1' },
-  { label: 'Nombre z-a', value: '2' },
-  { label: 'Categoría', value: '3' },
+  { label: 'Nombre a-z', value: 'name_asc' },
+  { label: 'Nombre z-a', value: 'name_desc' },
+  { label: 'Categoria', value: 'category' }
 ];
+
 
 export default function ViewClients({ navigation }) {
   const [value, setValue] = useState(null);
-  const [items, setItems] = useState([
-    { id: 1, name: 'Bimbo', phone: '+52 (618)-xxx-xxxx', email:'bimbo@gmail.com', category: 'Alimentos' },
-    { id: 2, name: 'Sabritas', phone: '+52 (679)-xxx-xxxx', email:'sabritas@gmail.com', category: 'Snacks' },
-  ]);
+  const [items, setItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
 
   const swipeableRefs = useRef(new Map());
+
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const userId = auth.currentUser?.uid;
+        if (!userId) {
+          console.error("Usuario no autenticado");
+          return;
+        }
+
+        const userArticlesRef = collection(db, `usuarios/${userId}/proveedores`);
+
+        // Usamos onSnapshot para escuchar cambios en tiempo real
+        const unsubscribe = onSnapshot(userArticlesRef, (querySnapshot) => {
+          const supplierList = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          setItems(supplierList);
+          setFilteredItems(supplierList);
+        });
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error("Error obteniendo productos: ", error);
+      }
+    };
+
+    fetchSuppliers();
+  }, []);
 
   const closeAllSwipes = () => {
     swipeableRefs.current.forEach(ref => ref?.close());
   };
 
-
-
-  const deleteItem = (id) => {
-    setItems(prevItems => prevItems.filter(item => item.id !== id));
+  const deleteItem = async (id) => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        console.error("Usuario no autenticado");
+        return;
+      }
+      await deleteDoc(doc(db, `usuarios/${userId}/proveedores`, id));
+      setItems(prevItems => prevItems.filter(item => item.id !== id));
+    } catch (error) {
+      console.error("Error eliminando producto: ", error);
+    }
     swipeableRefs.current.get(id)?.close();
   };
 
@@ -36,7 +83,42 @@ export default function ViewClients({ navigation }) {
     navigation.navigate('Editar proveedores', { item, deleteItem });
   };
 
+  const handleFilterChange = (selectedValue) => {
+    setValue(selectedValue);
+    let sortedItems = [...items];
 
+    switch (selectedValue) {
+      case 'name_asc':
+        sortedItems.sort((a, b) => {
+          if (a.nombre && b.nombre) {
+            return a.nombre.localeCompare(b.nombre);
+          }
+          return 0;
+        });
+        break;
+      case 'name_desc':
+        sortedItems.sort((a, b) => {
+          if (a.nombre && b.nombre) {
+            return b.nombre.localeCompare(a.nombre);
+          }
+          return 0;
+        });
+        break;
+      case 'category':
+        sortedItems.sort((a, b) => {
+          if (a.categoria && b.categoria) {
+            return a.categoria.localeCompare(b.categoria);
+          }
+          return 0;
+        });
+        break;
+
+      default:
+        break;
+    }
+
+    setFilteredItems(sortedItems);
+  };
 
   const renderRightActions = (item) => (
     <View className="flex flex-row-reverse ">
@@ -77,17 +159,20 @@ export default function ViewClients({ navigation }) {
     >
       <View className="w-full h-[95px] border border-[#157A8C]  justify-center bg-white p-4 my-2 rounded-lg">
         <View className="flex-row justify-between items-center">
-          <Text className="text-lg font-bold text-blue-900">{item.name}</Text>
+          <View className="flex flex-col">
+            <Text className="text-lg font-bold text-blue-900">{item.nombre}</Text>
+            <Text className="text-sm">{item.categoria}</Text>
+          </View>
+
           <View className="items-center">
             <Text className="text-sm text-gray-500">No. de teléfono</Text>
-            <Text className="text-sm text-gray-500">{item.phone}</Text>
+            <Text className="text-sm text-gray-500">{item.numero}</Text>
           </View>
-          
+
         </View>
       </View>
     </Swipeable>
   );
-
 
   return (
     <GestureHandlerRootView className="flex-1">
@@ -105,9 +190,7 @@ export default function ViewClients({ navigation }) {
               valueField="value"
               placeholder="Filtrar proveedores"
               value={value}
-              onChange={item => {
-                setValue(item.value);
-              }}
+              onChange={item => handleFilterChange(item.value)}
               renderLeftIcon={() => (
                 <Ionicons className="mr-3" name="filter-outline" size={20} color="#106B87" />
               )}
@@ -125,7 +208,7 @@ export default function ViewClients({ navigation }) {
 
         </View>
         <FlatList
-          data={items}
+          data={filteredItems}
           keyExtractor={item => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={{ paddingBottom: 20 }}
@@ -137,58 +220,58 @@ export default function ViewClients({ navigation }) {
 
 const styles = StyleSheet.create({
   dropdown: {
-      alignItems: 'center',
-      height: 50,
-      backgroundColor: 'white',
-      borderRadius: 12,
-      padding: 16,
-      shadowColor: '#000',
-      shadowOffset: {
-          width: 0,
-          height: 1,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 1.41,
+    alignItems: 'center',
+    height: 50,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
 
-      elevation: 2,
+    elevation: 2,
   },
   icon: {
-      marginRight: 5,
+    marginRight: 5,
   },
   item: {
-      padding: 17,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+    padding: 17,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   textItem: {
-      flex: 1,
-      fontSize: 16,
+    flex: 1,
+    fontSize: 16,
   },
   placeholderStyle: {
-      fontSize: 16,
+    fontSize: 16,
   },
   selectedTextStyle: {
-      fontSize: 16,
+    fontSize: 16,
   },
   iconStyle: {
-      width: 20,
-      height: 20,
+    width: 20,
+    height: 20,
   },
   inputSearchStyle: {
-      height: 40,
-      fontSize: 16,
+    height: 40,
+    fontSize: 16,
   },
   rightAction: {
-      backgroundColor: '#FF4D4D',
-      justifyContent: 'center',
-      alignItems: 'center',
-      width: 100,
-      borderTopRightRadius: 10,
-      borderBottomRightRadius: 10,
+    backgroundColor: '#FF4D4D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
   },
   actionText: {
-      color: 'white',
-      fontWeight: 'bold',
+    color: 'white',
+    fontWeight: 'bold',
   },
 });

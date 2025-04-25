@@ -1,6 +1,8 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useState, useRef, useEffect } from 'react';
 import { Text, View, TouchableOpacity, Alert } from 'react-native';
+import { useProductContext } from '../../context/ProductContext';
+
 
 export default function Scanner({ navigation, route }) {
     const [permission, requestPermission] = useCameraPermissions();
@@ -10,7 +12,7 @@ export default function Scanner({ navigation, route }) {
 
     // parámetro para saber dónde estoy
     const { mode } = route.params || {};
-
+    const { addProductToCart } = useProductContext();
 
     useEffect(() => {
         // Detecta cuando la pantalla pierde el foco y desactiva la cámara
@@ -47,6 +49,9 @@ export default function Scanner({ navigation, route }) {
 
     // Maneja el escaneo de códigos de barras 
     async function handleBarcodeScanned({ data }) {
+
+    
+
         if (data && !barcodeLock.current && scanning) {
             barcodeLock.current = true;
             setScanning(false); // Desactiva el escaneo después de un escaneo exitoso
@@ -89,7 +94,17 @@ export default function Scanner({ navigation, route }) {
                                 }
                             }
                         ]);
-                    } else if (mode === 'addToBasket') {
+                    } else if (mode === 'addToBasket') {  
+
+                        const productData = {
+                            id: data,
+                            name: productName,
+                            price: 8, // Aquí podrías obtener el precio real
+                            image: image,
+                        };
+
+                        addProductToCart(productData);
+
                         // Si es para agregar a la canasta de venta
                         Alert.alert('Producto añadido a la caja ', `Código de barras: ${data}\Nombre del producto: ${productName}`, [
                             {
@@ -97,18 +112,22 @@ export default function Scanner({ navigation, route }) {
                                 onPress: () => {
                                     barcodeLock.current = false;
                                     setScanning(true);
+                                    navigation.navigate('Venta'); // Volver a SalesPage
                                 }
                             }
                         ]);
                     }
+
                 } catch (error) {
                     Alert.alert('Error', 'Unable to fetch product information. Please try again later.');
                     barcodeLock.current = false;
                     setScanning(true);
+
                 }
             }, 500);
         }
     }
+
 
     return (
         <View className="flex-1 ">

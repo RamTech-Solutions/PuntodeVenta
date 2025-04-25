@@ -1,23 +1,92 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
-import React from 'react'
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { ScrollView } from 'react-native-gesture-handler'
 import TextInputs from '../../components/TextInputs'
 import AntDesign from '@expo/vector-icons/AntDesign';
 import '../../global.css'
+import { getFirestore, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { app } from '../../firebase-config.js';
+import { getAuth } from 'firebase/auth';
 
 export default function EditItem({ navigation, route }) {
 
-  const { item, deleteItem } = route.params;
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const { item } = route.params;
 
   const itemID = item.id;
-  const itemStringID= itemID.toString();
+  const itemStringID = itemID.toString();
 
-  const handleDelete = () => {
-    deleteItem(item.id); // Elimina el producto
-    navigation.navigate('Ver Productos'); // Regresa a la vista de productos
-};
-  
- 
+  const [productName, setProductName] = useState("");
+  const [precioVenta, setPrecioVenta] = useState("");
+  const [precioProveedor, setPrecioProveedor] = useState("");
+  const [precioCoste, setPrecioCoste] = useState("");
+  const [categories, setCategories] = useState("");
+  const [barcode, setBarcode] = useState("");
+
+  useEffect(() => {
+    if (item) {
+      setProductName(item.productName || '');
+      setPrecioVenta(item.precioVenta || '');
+      setPrecioProveedor(item.precioProveedor || '');
+      setPrecioCoste(item.precioCoste || '');
+      setCategories(item.categories || '');
+      setBarcode(item.barcode || '');
+    }
+  }, [item]);
+
+  const handleDelete = async () => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        console.error("Usuario no autenticado");
+        return;
+      }
+
+      await deleteDoc(doc(db, `usuarios/${userId}/articulos`, item.id));
+
+      // Muestra una alerta para confirmar la eliminación
+      Alert.alert("Eliminado", "El producto ha sido eliminado correctamente.", [
+        { text: "OK", onPress: () => navigation.navigate('Ver Productos') }
+      ]);
+
+    } catch (error) {
+      console.error("Error eliminando producto: ", error);
+      Alert.alert("Error", "Hubo un problema al eliminar el producto.");
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      const userId = auth.currentUser?.uid;
+      if (!userId) {
+        console.error("Usuario no autenticado");
+        return;
+      }
+
+      // Referencia al documento en Firestore
+      const productRef = doc(db, `usuarios/${userId}/articulos`, item.id);
+
+      // Actualizar Firestore con los nuevos valores
+      await updateDoc(productRef, {
+        productName,
+        precioVenta,
+        precioProveedor,
+        precioCoste,
+        categories,
+        barcode
+      });
+
+      Alert.alert("Actualizado", "El producto ha sido actualizado correctamente.", [
+        { text: "OK", onPress: () => navigation.navigate('Ver Productos') }
+      ]);
+    } catch (error) {
+      console.error("Error actualizando producto: ", error);
+      Alert.alert("Error", "Hubo un problema al actualizar el producto.");
+    }
+  };
+
   return (
     <ScrollView>
       <View className="flex-1 ">
@@ -37,19 +106,28 @@ export default function EditItem({ navigation, route }) {
           <View className="gap-5">
             <TextInputs
               titulo="Nombre del producto"
-              placeHolder={item.name} />
+              placeHolder={item.productName}
+              value={productName}
+              onChangeText={setProductName} />
+
             <TextInputs
               titulo="Precio de venta"
-              placeHolder={item.price} />
+              placeHolder={item.precioVenta}
+              value={precioVenta}
+              onChangeText={setPrecioVenta} />
 
             <View className="bg-white rounded-md p-5 gap-5">
               <TextInputs
                 titulo="Precio"
-                placeHolder="$99.99"
+                placeHolder={item.precioProveedor}
+                value={precioProveedor}
+                onChangeText={setPrecioProveedor}
               />
               <TextInputs
                 titulo="Coste"
-                placeHolder="$99.99" />
+                placeHolder={item.precioCoste}
+                value={precioCoste}
+                onChangeText={setPrecioCoste} />
             </View>
 
             <View className="flex flex-col gap-5">
@@ -70,21 +148,25 @@ export default function EditItem({ navigation, route }) {
             <View className="gap-5">
               <TextInputs
                 titulo="Categoría"
-                placeHolder={item.category} />
+                placeHolder={item.categories}
+                value={categories}
+                onChangeText={setCategories} />
               <TextInputs
                 titulo="ID"
-                placeHolder= {itemStringID} />
+                placeHolder={itemStringID} />
               <TextInputs
                 titulo="Código de barras"
-                placeHolder="P342" />
+                placeHolder={item.barcode}
+                value={barcode}
+                onChangeText={setBarcode} />
             </View>
 
             {/* Botón de aceptar/cancelar */}
             <View className="justify-center items-center gap-5">
               <View className="w-full">
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleUpdate}>
                   <View className="bg-[#003F69] p-5 rounded-lg w-full items-center">
-                    <Text className="text-white font-bold">Añadir nuevo producto</Text>
+                    <Text className="text-white font-bold">Editar producto</Text>
                   </View>
                 </TouchableOpacity>
               </View>
@@ -107,11 +189,3 @@ export default function EditItem({ navigation, route }) {
     </ScrollView>
   )
 }
-
-const styles = StyleSheet.create({
-  image: {
-    width: 300,
-    height: 200,
-    resizeMode: 'cover', // Ajusta cómo se muestra la imagen
-  }
-});

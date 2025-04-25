@@ -3,8 +3,12 @@ import React from 'react'
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import OptionComponent from '../../components/OptionComponent';
 import '../../global.css'
+import { auth } from '../../firebase-config.js'
 
 export default function MainConfiguration(navigation) {
+
+     const user = auth.currentUser;
+
     return (
         <View className="flex-1 justify-between" >
             {/* Header Cuenta */}
@@ -18,10 +22,10 @@ export default function MainConfiguration(navigation) {
                     <View className="bg-white w-[380px] flex flex-row justify-between items-center p-14 border border-[#003F69] rounded-lg">
                         <View className="flex-col">
                             <Text className="text-2xl font-bold ">
-                                User
+                                Usuario
                             </Text>
                             <Text>
-                                Email@example.com
+                                {user.email}
                             </Text>
                         </View>
                         <View>
@@ -50,7 +54,7 @@ export default function MainConfiguration(navigation) {
                         option="Personalizar app" 
                         link="Personalizar App"/>
                     <OptionComponent
-                        option="Notificaciones"
+                        option="Historial de ventas"
                         link="Notificaciones" />
                 </View>
             </View>

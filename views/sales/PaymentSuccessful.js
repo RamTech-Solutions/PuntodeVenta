@@ -3,20 +3,24 @@ import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import SuccessAnimation from '../../components/SuccessAnimation'
 import '../../global.css'
+import { useRoute } from '@react-navigation/native'
 
 
 export default function PaymentSuccessful({ navigation }) {
+    const route =  useRoute();
+    const { paymentMethod, change } = route.params || {};
+
     return (
         <SafeAreaView className="flex-1 justify-between ">
             <View className="justify-center items-center">
                 <SuccessAnimation />
-                <Text className="text-2xl font-bold text-[#003F69]">¡Transacción exitosa!</Text>
+                <Text className="text-2xl font-bold text-[#003F69]">Compra exitosa!</Text>
             </View>
             <View className="justify-center items-center mx-5">
                 <View className="bg-[#003f69] w-96 p-4 rounded-lg">
-                    <Text className="font-bold text-white text-xl text-center">Método de pago: placeholder</Text>
+                    <Text className="font-bold text-white text-xl text-center">Método de pago: {paymentMethod}</Text>
                     <View className="border-b border-white my-5" />
-                    <Text className="font-bold text-white text-xl text-center">Cambio de dinero: placeholder</Text>
+                    <Text className="font-bold text-white text-xl text-center">Cambio de dinero: ${ change }</Text>
                 </View>
             </View>
             <View className="justify-center items-center gap-5">

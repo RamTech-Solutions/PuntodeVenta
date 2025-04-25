@@ -2,46 +2,133 @@ import "../../global.css";
 import { Dropdown } from 'react-native-element-dropdown';
 import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FlatList, GestureHandlerRootView } from "react-native-gesture-handler";
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
+import { getFirestore, collection, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { app } from '../../firebase-config.js';
+import { getAuth } from 'firebase/auth';
+
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 const data = [
-    { label: 'Nombre a-z', value: '1' },
-    { label: 'Nombre z-a', value: '2' },
-    { label: 'Menor precio', value: '3' },
-    { label: 'Mayor precio', value: '4' },
-    { label: 'Categoria', value: '5' },
+    { label: 'Nombre a-z', value: 'name_asc' },
+    { label: 'Nombre z-a', value: 'name_desc' },
+    { label: 'Menor precio', value: 'price_asc' },
+    { label: 'Mayor precio', value: 'price_desc' },
+    { label: 'Categoría', value: 'category' },
 ];
 
-const screenWidth = Dimensions.get('window').width;
+
+// const screenWidth = Dimensions.get('window').width;
 
 export default function ViewItems({ navigation }) {
     const [value, setValue] = useState(null);
-    const [items, setItems] = useState([
-        { id: 1, name: 'No.Example', category: 'Category Example', price: '$24.99' },
-        { id: 2, name: 'Another Example', category: 'Another Category', price: '$19.99' },
-    ]);
+    const [items, setItems] = useState([]);
+    const [filteredItems, setFilteredItems] = useState([]);
 
     const swipeableRefs = useRef(new Map());
+
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const userId = auth.currentUser?.uid;
+                if (!userId) {
+                    console.error("Usuario no autenticado");
+                    return;
+                }
+    
+                const userArticlesRef = collection(db, `usuarios/${userId}/articulos`);
+                
+                // Usamos onSnapshot para escuchar cambios en tiempo real
+                const unsubscribe = onSnapshot(userArticlesRef, (querySnapshot) => {
+                    const productList = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    }));
+    
+                    setItems(productList);
+                    setFilteredItems(productList);
+                });
+    
+                return () => unsubscribe(); // Limpiar suscripción al desmontar el componente
+            } catch (error) {
+                console.error("Error obteniendo productos: ", error);
+            }
+        };
+    
+        fetchProducts();
+    }, []);
+
 
     const closeAllSwipes = () => {
         swipeableRefs.current.forEach(ref => ref?.close());
     };
 
 
-
-    const deleteItem = (id) => {
-        setItems(prevItems => prevItems.filter(item => item.id !== id));
+    const deleteItem = async (id) => {
+        try {
+            const userId = auth.currentUser?.uid;
+            if (!userId) {
+                console.error("Usuario no autenticado");
+                return;
+            }
+            await deleteDoc(doc(db, `usuarios/${userId}/articulos`, id));
+            setItems(prevItems => prevItems.filter(item => item.id !== id));
+        } catch (error) {
+            console.error("Error eliminando producto: ", error);
+        }
         swipeableRefs.current.get(id)?.close();
     };
 
     const navigateToEdit = (item) => {
-        navigation.navigate('Editar Productos', { item, deleteItem });
+        navigation.navigate('Editar Productos', { item });
     };
 
+    const handleFilterChange = (selectedValue) => {
+        setValue(selectedValue);
+        let sortedItems = [...items];
 
+        switch (selectedValue) {
+            case 'name_asc':
+                sortedItems.sort((a, b) => {
+                    if (a.productName && b.productName) {
+                        return a.productName.localeCompare(b.productName);
+                    }
+                    return 0;
+                });
+                break;
+            case 'name_desc':
+                sortedItems.sort((a, b) => {
+                    if (a.productName && b.productName) {
+                        return b.productName.localeCompare(a.productName);
+                    }
+                    return 0;
+                });
+                break;
+            case 'price_asc':
+                sortedItems.sort((a, b) => parseFloat(a.precioVenta) - parseFloat(b.precioVenta));
+                break;
+            case 'price_desc':
+                sortedItems.sort((a, b) => parseFloat(b.precioVenta) - parseFloat(a.precioVenta));
+                break;
+            case 'category':
+                sortedItems.sort((a, b) => {
+                    if (a.categories && b.categories) {
+                        return a.categories.localeCompare(b.categories);
+                    }
+                    return 0;
+                });
+                break;
+            default:
+                break;
+        }
+
+        setFilteredItems(sortedItems);
+    };
 
     const renderRightActions = (item) => (
         <View className="flex flex-row-reverse ">
@@ -83,10 +170,10 @@ export default function ViewItems({ navigation }) {
             <View className="w-full h-[95px] border border-[#157A8C]  justify-center bg-white p-4 my-2 rounded-lg">
                 <View className="flex-row justify-between items-center">
                     <View>
-                        <Text className="text-lg font-bold text-blue-900">{item.name}</Text>
-                        <Text className="text-sm text-gray-500">{item.category}</Text>
+                        <Text className="text-lg font-bold text-blue-900">{item.productName}</Text>
+                        <Text className="text-sm text-gray-500">{item.categories}</Text>
                     </View>
-                    <Text className="text-base font-semibold text-[#2A3256] mt-1">{item.price}</Text>
+                    <Text className="text-base font-semibold text-[#2A3256] mt-1">$ {item.precioVenta}</Text>
                 </View>
 
 
@@ -110,9 +197,7 @@ export default function ViewItems({ navigation }) {
                             valueField="value"
                             placeholder="Filtrar productos"
                             value={value}
-                            onChange={item => {
-                                setValue(item.value);
-                            }}
+                            onChange={item => handleFilterChange(item.value)}
                             renderLeftIcon={() => (
                                 <Ionicons className="mr-3" name="filter-outline" size={20} color="#106B87" />
                             )}
@@ -130,7 +215,7 @@ export default function ViewItems({ navigation }) {
 
                 </View>
                 <FlatList
-                    data={items}
+                    data={filteredItems}
                     keyExtractor={item => item.id.toString()}
                     renderItem={renderItem}
                     contentContainerStyle={{ paddingBottom: 20 }}

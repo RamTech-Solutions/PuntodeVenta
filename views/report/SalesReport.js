@@ -1,16 +1,15 @@
-
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native'
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import '../../global.css'
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Dropdown } from 'react-native-element-dropdown';
 import { LineChart } from "react-native-chart-kit";
 import { Provider as PaperProvider } from 'react-native-paper';
-import MyComponent from '../../components/DataTable';
+import SalesComponent from '../../components/DataTable';
 import PopUp from '../../components/PopUp';
-
-
-
+import { db } from '../../firebase-config.js'
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 const data = [
   { label: 'Ventas de artículos', value: '1' },
@@ -18,79 +17,96 @@ const data = [
   { label: 'Venta por categoría', value: '3' },
 ];
 
-
-
-
 export default function SalesReport() {
   const [value, setValue] = useState(null);
   const [isPopUpVisible, setPopUpVisible] = useState(false);
+  const [salesData, setSalesData] = useState([]);
 
-
-
-  const screenWidth = Dimensions.get('window').width;
+  useEffect(() => {
+    const fetchSales = async () => {
+      try {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        if (!user) {
+          console.error("No hay usuario autenticado");
+          return;
+        }
+        const userId = user.uid;
+  
+        const salesRef = collection(db, `usuarios/${userId}/ventas`);
+        const q = query(salesRef, orderBy('timestamp', 'asc'));
+        const querySnapshot = await getDocs(q);
+  
+        const sales = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            date: data.timestamp ? data.timestamp.toDate().toLocaleDateString() : "Fecha no disponible",
+            amount: typeof data.total === "number" && isFinite(data.total) ? data.total : 0, // Ensure valid number
+          };
+        });
+  
+        const groupedSales = {};
+        sales.forEach(({ date, amount }) => {
+          if (!groupedSales[date]) {
+            groupedSales[date] = 0;
+          }
+          groupedSales[date] += amount;
+        });
+  
+        const processedSales = Object.keys(groupedSales).map(date => ({
+          date,
+          amount: groupedSales[date],
+        }));
+  
+        setSalesData(processedSales);
+      } catch (error) {
+        console.error("Error obteniendo ventas:", error);
+      }
+    };
+  
+    fetchSales();
+  }, []);
+  
+  const chartData = {
+    labels: salesData.length > 0 ? salesData.map(sale => sale.date) : ["No Data"],
+    datasets: [
+      {
+        data: salesData.length > 0
+          ? salesData.map(sale => {
+              const amount = parseFloat(sale.amount);
+              return isNaN(amount) || !isFinite(amount) ? 0 : amount;
+            })
+          : [0], // Default to 0 if no data
+      },
+    ],
+  };
 
   return (
-    <View className="flex-1 justify-between">
+    <View className="flex-1 justify-between"> 
       <View className='justify-between gap-5'>
         <View className="m-2">
-          <View className="flex flex-row w-full justify-evenly gap-2">
-            <View className="w-[210px]">
-              <Dropdown
-                style={styles.dropdown}
-                placeholderStyle={styles.placeholderStyle}
-                selectedTextStyle={styles.selectedTextStyle}
-                iconStyle={styles.iconStyle}
-                data={data}
-                maxHeight={300}
-                labelField="label"
-                valueField="value"
-                placeholder="Filtrar productos"
-                value={value}
-                onChange={item => {
-                  setValue(item.value);
-                }}
-                renderLeftIcon={() => (
-                  <Ionicons className="mr-3" name="filter-outline" size={20} color="#106B87" />
-                )}
-              />
-            </View>
-            <TouchableOpacity onPress={()=> setPopUpVisible(true)}>
-              <View className="bg-[#D9D9D9] items-center justify-center rounded-[8px] h-[50px] w-[160px]">
+          <View className="flex   w-full justify-evenly ">
+            <TouchableOpacity onPress={() => setPopUpVisible(true)}>
+              <View className="bg-gray-100 shadow-sm items-center justify-center rounded-[8px] h-[50px] w-full">
                 <Text className=" text-[15px] px-5">Extraer reporte</Text>
               </View>
             </TouchableOpacity>
-
           </View>
         </View>
         <View>
           <Text className="text-2xl font-bold text-[#003F69] ml-5">Reporte de ventas</Text>
           <View className=" justify-center items-center">
             <LineChart
-              data={{
-                labels: ["January", "February", "March", "April", "May", "June"],
-                datasets: [
-                  {
-                    data: [
-                      Math.random() * 100,
-                      Math.random() * 100,
-                      Math.random() * 100,
-                      Math.random() * 100,
-                      Math.random() * 100,
-                      Math.random() * 100
-                    ]
-                  }
-                ]
-              }}
-              width={Dimensions.get("window").width} // from react-native
+              data={chartData}
+              width={Dimensions.get("window").width - 40}
               height={220}
               yAxisLabel="$"
-              yAxisSuffix="k"
-              yAxisInterval={1} // optional, defaults to 1
+              yAxisInterval={1}
               chartConfig={{
                 backgroundColor: "#ffffff",
                 backgroundGradientFrom: "#ffffff",
                 backgroundGradientTo: "#ffffff",
-                decimalPlaces: 2, // optional, defaults to 2dp
+                decimalPlaces: 2,
                 color: (opacity = 1) => `rgba(9, 249, 191, ${opacity})`,
                 labelColor: (opacity = 1) => `rgba(113, 142, 191, ${opacity})`,
                 gridColor: (opacity = 1) => `rgba(223, 229, 238, ${opacity})`,
@@ -111,27 +127,19 @@ export default function SalesReport() {
             />
           </View>
         </View>
-
       </View>
       <View>
-
         <Text className="text-2xl font-bold text-[#003F69] ml-5">Historial de venta</Text>
-
-
       </View>
-
       <View className="mb-5">
-        <MyComponent />
+        <SalesComponent />
       </View>
-
       <View>
-        {/* Componente PopUp */}
         <PopUp
           visible={isPopUpVisible}
           onClose={() => setPopUpVisible(false)}
         />
       </View>
-
     </View>
   )
 }
@@ -143,7 +151,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#D9D9D9',
     borderRadius: 12,
     padding: 16,
-
     elevation: 2,
   },
   icon: {
